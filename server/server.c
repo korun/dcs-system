@@ -33,7 +33,7 @@
 #ifndef DEV_NULL_PATH
     #define DEV_NULL_PATH       "/dev/null"
 #endif
-#define DEFAULT_CACHE_PATH      "/home/kia84/Documents/Device_Control_System/server/"
+#define DEFAULT_CACHE_PATH      "/tmp/"
 #define DEFAULT_THREADS_COUNT   2
 #define DEFAULT_THREADS_COUNT_S "2"
 
