@@ -34,12 +34,12 @@
 
 //~ #define CMD_DMIDECODE   "dmidecode -t 1 | egrep \"(Manufacturer|Product Name|Serial Number)\""
 //~ #define CMD_DMIDECODE   "dmidecode -t 1"
-#define CMD_BIOSDECODE  "biosdecode | grep slot"
-//~ #define CMD_BIOSDECODE   "cat ~kia84/Device_Control_System/client/fake/biosdecode | grep slot"
-#define CMD_LSPCI        "env -i lspci -n -vvv"
-//~ #define CMD_LSPCI        "cat ~kia84/Device_Control_System/client/fake/lspci"
-#define CMD_DMIDECODE(T) "dmidecode -t "T""
-//~ #define CMD_DMIDECODE(T) "cat ~kia84/Device_Control_System/client/fake/dmidecode_t_"T""
+//~ #define CMD_BIOSDECODE  "biosdecode | grep slot"
+#define CMD_BIOSDECODE   "cat ~kia84/Device_Control_System/client/fake/biosdecode | grep slot"
+//~ #define CMD_LSPCI        "env -i lspci -n -vvv"
+#define CMD_LSPCI        "cat ~kia84/Device_Control_System/client/fake/lspci"
+//~ #define CMD_DMIDECODE(T) "dmidecode -t "T""
+#define CMD_DMIDECODE(T) "cat ~kia84/Device_Control_System/client/fake/dmidecode_t_"T""
 
 #define check_to_fill(BUF) ((BUF) != NULL && \
                             strstr((BUF), "To Be Filled By O.E.M.") == NULL && \

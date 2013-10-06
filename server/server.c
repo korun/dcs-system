@@ -318,7 +318,7 @@ static void close_and_dup_stdfd(int stdfd, int nullfd){
 }
 
 int main(int argc, char *argv[]) {
-    pid_t pid, sid;
+    //~ pid_t pid, sid;
     pthread_attr_t pthread_attr;
     int   opt,               /* Буфер для распознания опций argv через getopt */
           opt_t = 0;         /* Указан ли ключ '-t' */
@@ -331,30 +331,30 @@ int main(int argc, char *argv[]) {
     #endif
     
     /* Отделяемся от родительского процесса */
-    pid = fork();
+    //~ pid = fork();
     
     /* Если не проходит даже форк - значит дела совсем плохи -
      * завершаем работу тут же. */
-    if (pid < 0) {
-        perror("fork()");
-        exit(EXIT_FAILURE);
-    }
+    //~ if (pid < 0) {
+        //~ perror("fork()");
+        //~ exit(EXIT_FAILURE);
+    //~ }
     
     /* Если дочерний процесс порождён успешно, то родительский процесс можно завершить. */
-    if (pid > 0) { exit(EXIT_SUCCESS); }
+    //~ if (pid > 0) { exit(EXIT_SUCCESS); }
     
     /* Открытие журнала на запись */
     openlog(SELF_NAME, LOG_ODELAY|LOG_PERROR|LOG_PID, LOG_DAEMON);
     
     /* Создание нового SID для дочернего процесса */
-    sid = setsid();
+    //~ sid = setsid();
     /* Если получить sid не удалось - пытаемся сделать это ещё SETSID_ATEMPTS_COUNT раз */
-    TRY_N_TIMES(SETSID_ATEMPTS_COUNT, (sid = setsid()), (sid < 0), "setsid()", LOG_CRIT);
+    //~ TRY_N_TIMES(SETSID_ATEMPTS_COUNT, (sid = setsid()), (sid < 0), "setsid()", LOG_CRIT);
     /* Если после вышеописанных попыток sid всё равно не получен - завершаем работу. */
-    if (sid < 0) {
-        syslog(LOG_EMERG, "setsid(): %s.", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+    //~ if (sid < 0) {
+        //~ syslog(LOG_EMERG, "setsid(): %s.", strerror(errno));
+        //~ exit(EXIT_FAILURE);
+    //~ }
     
     #if CATCH_SIGNAL
         sigemptyset(&sa_set);
