@@ -1,3 +1,5 @@
+/* encoding: UTF-8 */
+
 #include <pci/pci.h>
 #include <stdio.h>
 

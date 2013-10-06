@@ -1,3 +1,5 @@
+/* encoding: UTF-8 */
+
 #include "../client_server.h"
 
 CL_Detail *gethwdata(size_t *arr_size);

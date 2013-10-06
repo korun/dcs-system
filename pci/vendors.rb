@@ -1,3 +1,5 @@
+# /* encoding: UTF-8 */
+
 puts "DROP   TABLE IF     EXISTS vendors;"
 puts "CREATE TABLE IF NOT EXISTS vendors(id integer PRIMARY KEY, name varchar(128));"
 puts "INSERT INTO vendors"

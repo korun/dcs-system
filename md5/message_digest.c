@@ -1,3 +1,5 @@
+/* encoding: UTF-8 */
+
 /*
  * message_digest.c
  * 
