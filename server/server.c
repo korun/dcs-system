@@ -237,10 +237,10 @@ void *thread_operator(void *attr){
                                                     sizeof(details[i].bus_addr) + sizeof(details[i].serial_length);
                                                 DEBUGMSG(syslog(LOG_DEBUG, "HERE1! tmp_size = %d, serial_s = %d",
                                                             tmp_size, sizeof(details[i].serial_length)));
-                                                memcpy(&(details[i].vendor_id), hwdata_p, tmp_size);
+                                                memcpy(&(details[i]), hwdata_p, tmp_size);
                                                 //~ details[i].vendor_id = (unsigned int) hwdata;
                                                 hwdata_p += tmp_size;
-                                                DEBUGMSG(syslog(LOG_DEBUG, "Detail: %.4x:%.4x:%.8x (%.2x) [%.6x]: '%s', '%d'",
+                                                DEBUGMSG(syslog(LOG_DEBUG, "Detail: %.4x:%.4x:%.8x (%.2x) [%.6x]: '%s', '%u'",
                                                                     details[i].vendor_id,
                                                                     details[i].device_id,
                                                                     details[i].subsystem_id,
@@ -251,7 +251,9 @@ void *thread_operator(void *attr){
                                                 ));
                                                 DEBUGMSG(syslog(LOG_DEBUG, "HERE2! %d", details[i].serial_length));
                                                 memcpy(details[i].serial, hwdata_p, details[i].serial_length);
+                                                DEBUGMSG(syslog(LOG_DEBUG, "HERE2.1!"));
                                                 details[i].serial[details[i].serial_length] = '\0';
+                                                DEBUGMSG(syslog(LOG_DEBUG, "HERE2.2!"));
                                                 hwdata_p += details[i].serial_length;
                                                 DEBUGMSG(syslog(LOG_DEBUG, "HERE3!"));
                                                 memcpy(&(details[i].params_length), hwdata_p, sizeof(details[i].params_length));

@@ -154,6 +154,8 @@ int main (int argc, char **argv) {
         tmp_p += tmp_size;
         hw_list_size += tmp_size;
         
+		memcpy(tmp_p, &(details[i].serial_length), sizeof(details[i].serial_length));
+	tmp_p += sizeof(details[i].serial_length);
 		memcpy(tmp_p, details[i].serial, details[i].serial_length);
         tmp_p += details[i].serial_length;
         hw_list_size += details[i].serial_length;
@@ -172,8 +174,8 @@ int main (int argc, char **argv) {
 			details[i].subsystem_id);
 		printf("Class:\t%.6x (rev: %.2x)\n",
 			details[i].class_code, details[i].revision);
-		printf("Bus:\t%s\nSerial:\t'%s'\n",
-			details[i].bus_addr, details[i].serial);
+		printf("Bus:\t%s\nSerial[%u]:\t'%s'\n",
+			details[i].bus_addr, details[i].serial_length, details[i].serial);
         printf("Params[%d]:\t%s\n", details[i].params_length,
 			details[i].params);
         printf("tmp_p(int): %.4x\n", (int) (*tmp_p));
