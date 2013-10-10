@@ -6,6 +6,8 @@
     Здесь находятся константы, используемые как клиентом так и сервером.
 **/
 
+#include <stdint.h>
+#include <arpa/inet.h>
 #include "dbdef.h"
 
 #ifndef	_CLIENT_SERVER_H
@@ -41,18 +43,20 @@
             (ACT);                                               \
         }
 
+#define get_uint32_from(POINTER) ntohl((uint32_t) *((uint32_t *) (POINTER)))
+
 typedef struct {
-    unsigned int id;
-    unsigned int vendor_id;
-    unsigned int device_id;
-    unsigned int subsystem_id;
-    unsigned int class_code;
-    unsigned int revision;
-    char         bus_addr[6];
-    size_t       serial_length;
-    char         serial[DETAIL_SERIAL_SIZE + 1]; /* + '\0' */
-    size_t       params_length;
-    char        *params;
+    uint32_t id;
+    uint32_t vendor_id;
+    uint32_t device_id;
+    uint32_t subsystem_id;
+    uint32_t class_code;
+    uint32_t revision;
+    char     bus_addr[6];
+    size_t   serial_length;
+    char     serial[DETAIL_SERIAL_SIZE + 1]; /* + '\0' */
+    size_t   params_length;
+    char    *params;
 } CL_Detail;
 
 #endif /* client_server.h */

@@ -233,14 +233,21 @@ void *thread_operator(void *attr){
                                             
                                             unsigned char *hwdata_p = hwdata;
                                             for(int i = 0; i < 40; i++){
-                                                int tmp_size = sizeof(unsigned int) * 5 + 
-                                                    sizeof(details[i].bus_addr) + sizeof(details[i].serial_length);
-                                                DEBUGMSG(syslog(LOG_DEBUG, "HERE1! tmp_size = %d, serial_s = %d",
-                                                            tmp_size, sizeof(details[i].serial_length)));
-                                                memcpy(&(details[i]), hwdata_p, tmp_size);
-                                                //~ details[i].vendor_id = (unsigned int) hwdata;
-                                                hwdata_p += tmp_size;
-                                                DEBUGMSG(syslog(LOG_DEBUG, "Detail: %.4x:%.4x:%.8x (%.2x) [%.6x]: '%s', '%u'",
+                                                details[i].vendor_id = get_uint32_from(hwdata_p);
+                                                hwdata_p += sizeof(uint32_t);
+                                                details[i].device_id = get_uint32_from(hwdata_p);
+                                                hwdata_p += sizeof(uint32_t);
+                                                details[i].subsystem_id = get_uint32_from(hwdata_p);
+                                                hwdata_p += sizeof(uint32_t);
+                                                details[i].class_code = get_uint32_from(hwdata_p);
+                                                hwdata_p += sizeof(uint32_t);
+                                                details[i].revision = get_uint32_from(hwdata_p);
+                                                hwdata_p += sizeof(uint32_t);
+                                                memcpy(&details[i].bus_addr, hwdata_p, sizeof(details[i].bus_addr));
+                                                hwdata_p += sizeof(details[i].bus_addr);
+                                                details[i].serial_length = get_uint32_from(hwdata_p);
+                                                hwdata_p += sizeof(uint32_t);
+                                                DEBUGMSG(syslog(LOG_DEBUG, "Detail: %.4x:%.4x:%.8x (rev %.2x) [class: %.6x] Bus: '%s', SL '%u'",
                                                                     details[i].vendor_id,
                                                                     details[i].device_id,
                                                                     details[i].subsystem_id,
@@ -250,16 +257,18 @@ void *thread_operator(void *attr){
                                                                     details[i].serial_length
                                                 ));
                                                 DEBUGMSG(syslog(LOG_DEBUG, "HERE2! %d", details[i].serial_length));
-                                                memcpy(details[i].serial, hwdata_p, details[i].serial_length);
+                                                memcpy(&details[i].serial, hwdata_p, details[i].serial_length);
+                                                hwdata_p += details[i].serial_length;
                                                 DEBUGMSG(syslog(LOG_DEBUG, "HERE2.1!"));
                                                 details[i].serial[details[i].serial_length] = '\0';
-                                                DEBUGMSG(syslog(LOG_DEBUG, "HERE2.2!"));
-                                                hwdata_p += details[i].serial_length;
                                                 DEBUGMSG(syslog(LOG_DEBUG, "HERE3!"));
-                                                memcpy(&(details[i].params_length), hwdata_p, sizeof(details[i].params_length));
-                                                hwdata_p += sizeof(details[i].params_length);
+                                                details[i].params_length = get_uint32_from(hwdata_p);
+                                                hwdata_p += sizeof(uint32_t);
                                                 DEBUGMSG(syslog(LOG_DEBUG, "HERE4! params_length: %d", details[i].params_length));
-                                                memcpy(&(details[i].params), hwdata_p, details[i].params_length);
+                                                details[i].params = (char *) calloc(sizeof(char), details[i].params_length);
+                                                memcpy(details[i].params, hwdata_p, details[i].params_length);
+                                                hwdata_p += details[i].params_length;
+                                                details[i].params[details[i].params_length] = '\0';
                                                 
                                                 DEBUGMSG(syslog(LOG_DEBUG, "Detail: %.4x:%.4x:%.8x (%.2x) [%.6x]: '%s', '%s'",
                                                                     details[i].vendor_id,

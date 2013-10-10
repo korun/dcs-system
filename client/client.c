@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <zmq.h>
+#include <arpa/inet.h>
 
 #include "gethwdata.h"
 #include "../dbdef.h"
@@ -28,6 +29,18 @@
 #ifndef DEV_NULL_PATH
     #define DEV_NULL_PATH       "/dev/null"
 #endif
+
+#define store_uint32_to(DEST, UINT32)                                           \
+    do {                                                                        \
+        uint32_t ordered_int32 = htonl((uint32_t) (UINT32));                    \
+        memcpy((void *) (DEST), (void *) &(ordered_int32), sizeof(uint32_t));   \
+    } while(0)
+
+#define SHIFT_AND_INC(POINTER, SIZE, VAL)   \
+    do {                                    \
+        (POINTER) += (VAL);                 \
+        (SIZE)    += (VAL);                 \
+    } while(0)
 
 /* Функция, закрывающая стандартный файловый дескриптор, и
    создающая его копию, перенаправленную в /dev/null.      */
@@ -78,7 +91,7 @@ static int fill_message(
 }
 
 int main (int argc, char **argv) {
-    pid_t pid, sid;
+    //~ pid_t pid, sid;
     int   be_verbose = 0;   /* Логический флаг "болтливости" */
     int   opt;              /* Буфер для распознания опций argv через getopt */
     char  server_addr[MAX_SERVER_ADDR_SIZE];    /* Адрес сервера */
@@ -94,29 +107,29 @@ int main (int argc, char **argv) {
     unsigned char *message;
     
     /* Отделяемся от родительского процесса */
-    pid = fork();
+    //~ pid = fork();
     /* Если не проходит даже форк - значит дела совсем плохи -
      * завершаем работу тут же. */
-    if (pid < 0) {
-        perror("fork()");
-        exit(EXIT_FAILURE);
-    }
+    //~ if (pid < 0) {
+        //~ perror("fork()");
+        //~ exit(EXIT_FAILURE);
+    //~ }
     
     /* Если дочерний процесс порождён успешно, то родительский процесс можно завершить. */
-    if (pid > 0) { exit(EXIT_SUCCESS); }
+    //~ if (pid > 0) { exit(EXIT_SUCCESS); }
     
     /* Открытие журнала на запись */
     openlog(SELF_NAME, LOG_ODELAY|LOG_PERROR|LOG_PID, LOG_DAEMON);
     
     /* Создание нового SID для дочернего процесса */
-    sid = setsid();
+    //~ sid = setsid();
     /* Если получить sid не удалось - пытаемся сделать это ещё SETSID_ATEMPTS_COUNT раз */
-    TRY_N_TIMES(SETSID_ATEMPTS_COUNT, (sid = setsid()), (sid < 0), "setsid()", LOG_CRIT);
+    //~ TRY_N_TIMES(SETSID_ATEMPTS_COUNT, (sid = setsid()), (sid < 0), "setsid()", LOG_CRIT);
     /* Если после вышеописанных попыток sid всё равно не получен - завершаем работу. */
-    if (sid < 0) {
-        syslog(LOG_EMERG, "setsid(): %s.", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+    //~ if (sid < 0) {
+        //~ syslog(LOG_EMERG, "setsid(): %s.", strerror(errno));
+        //~ exit(EXIT_FAILURE);
+    //~ }
     
     /* Изменяем файловую маску - создаваемые файлы (etc) будут доступны
      * только для самого создавшего. 0666 & ~077 = 0600 */
@@ -146,39 +159,53 @@ int main (int argc, char **argv) {
     details = gethwdata(&details_size);
     
     for(int i = 0; i < details_size; i++){
-        int tmp_size;
-        
-        tmp_size = sizeof(unsigned int) * 5 + 
-            sizeof(details[i].bus_addr) + sizeof(details[i].serial_length);
-		memcpy(tmp_p, &(details[i].vendor_id), tmp_size);
-        tmp_p += tmp_size;
-        hw_list_size += tmp_size;
-        
-		memcpy(tmp_p, &(details[i].serial_length), sizeof(details[i].serial_length));
-	tmp_p += sizeof(details[i].serial_length);
+        unsigned char *print_pointer = tmp_p; /* debug only */
+        store_uint32_to(tmp_p, details[i].vendor_id);
+            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(uint32_t));
+        store_uint32_to(tmp_p, details[i].device_id);
+            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(uint32_t));
+        store_uint32_to(tmp_p, details[i].subsystem_id);
+            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(uint32_t));
+        store_uint32_to(tmp_p, details[i].class_code);
+            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(uint32_t));
+        store_uint32_to(tmp_p, details[i].revision);
+            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(uint32_t));
+        memcpy(tmp_p, &details[i].bus_addr, sizeof(details[i].bus_addr));
+            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(details[i].bus_addr));
+        store_uint32_to(tmp_p, details[i].serial_length);
+            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(uint32_t));
 		memcpy(tmp_p, details[i].serial, details[i].serial_length);
-        tmp_p += details[i].serial_length;
-        hw_list_size += details[i].serial_length;
-        
-        memcpy(tmp_p, &(details[i].params_length), sizeof(details[i].params_length));
-        tmp_p += sizeof(details[i].params_length);
-        hw_list_size += sizeof(details[i].params_length);
-        
+            SHIFT_AND_INC(tmp_p, hw_list_size, details[i].serial_length);
+        store_uint32_to(tmp_p, details[i].params_length);
+            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(uint32_t));
         memcpy(tmp_p, details[i].params, details[i].params_length);
-        tmp_p += details[i].params_length;
-        hw_list_size += details[i].params_length;
+            SHIFT_AND_INC(tmp_p, hw_list_size, details[i].params_length);
         
         printf("ID's:\t%.4x:%.4x:%.8x\n",
 			details[i].vendor_id,
 			details[i].device_id,
 			details[i].subsystem_id);
+        printf("    :\t%.4x:%.4x:%.8x\n",
+			get_uint32_from(print_pointer),
+			get_uint32_from(print_pointer + 4),
+			get_uint32_from(print_pointer + 8)
+        );
 		printf("Class:\t%.6x (rev: %.2x)\n",
 			details[i].class_code, details[i].revision);
-		printf("Bus:\t%s\nSerial[%u]:\t'%s'\n",
+		printf("     :\t%.6x (   : %.2x)\n",
+			get_uint32_from(print_pointer + 12),
+            get_uint32_from(print_pointer + 16)
+        );
+        printf("Bus:\t\t'%s'\nSerial[%u]:\t'%s'\n",
 			details[i].bus_addr, details[i].serial_length, details[i].serial);
+        printf("   :\t\t'%s'\n      [%u]:\t'%s'\n",
+            (print_pointer + 20), get_uint32_from(print_pointer + 26), (print_pointer + 30));
         printf("Params[%d]:\t%s\n", details[i].params_length,
 			details[i].params);
-        printf("tmp_p(int): %.4x\n", (int) (*tmp_p));
+        printf("      [%d]:\t%s\n", get_uint32_from(print_pointer + 30 + details[i].serial_length),
+            (print_pointer + 34 + details[i].serial_length));
+        printf("tmp_p(int): %.8x\n", (unsigned int) (tmp_p));
+        printf("hw_list_size: %d\n", (unsigned int) (hw_list_size));
         printf("------------------------------------\n");
         
         free(details[i].params);
@@ -245,8 +272,13 @@ int main (int argc, char **argv) {
     printf("Digest  = '");
     for(int i = 0; i < MSG_DIGEST_SIZE; i++) printf("%02x", message[i]);
     printf("'\n");
-    printf("Message = '%s'\n", message + MSG_DIGEST_SIZE);
-    //~ printf("Full message = '%s'\n", message);
+    printf("Control byte = '%02x'\n", *(message + MSG_DIGEST_SIZE));
+    printf("Hostname = '");
+    for(int i = 0; i < hostname_size; i++) printf("%c", *(message + MSG_DIGEST_SIZE + 1 + i));
+    printf("'\n|\n");
+    printf("Message = '");
+    for(int i = 0; i < MSG_DIGEST_SIZE; i++) printf("%02x", *(message + MSG_DIGEST_SIZE + hostname_size + 1 + i));
+    printf("'\n");
     
     zmq_msg_send(&request, requester, 0);
     zmq_msg_close(&request);
@@ -255,6 +287,8 @@ int main (int argc, char **argv) {
     zmq_msg_recv(&request, requester, 0);
     printf("\nAnswer: '%.2x'\n", *((char *) zmq_msg_data(&request)));
     printf("True? %d\n", *((char *) zmq_msg_data(&request)) == DCS_SERVER_REPLY_FULL);
+    
+    for(int i = 0; i < 128; i++) printf("-"); printf("\n");
     
     //~ if(strncmp((char *) zmq_msg_data(&request), DCS_SERVER_REPLY_FULL, DCS_SERVER_REPLY_SIZE) == 0){
     if(*((char *) zmq_msg_data(&request)) == DCS_SERVER_REPLY_FULL){
@@ -272,7 +306,14 @@ int main (int argc, char **argv) {
         printf("Digest  = '");
         for(int i = 0; i < MSG_DIGEST_SIZE; i++) printf("%02x", message[i]);
         printf("'\n");
-        printf("Message = '%s'\n", message + MSG_DIGEST_SIZE);
+        printf("Control byte = '%02x'\n", *(message + MSG_DIGEST_SIZE));
+        //~ printf("Message = '%s'\n", message + MSG_DIGEST_SIZE);
+        printf("Hostname = '");
+        for(int i = 0; i < hostname_size; i++) printf("%c", *(message + MSG_DIGEST_SIZE + 1 + i));
+        printf("'\n|\n");
+        printf("Message = '");
+        for(int i = 0; i < hw_list_size; i++) printf("%c", *(message + MSG_DIGEST_SIZE + hostname_size + 1 + i));
+        printf("'\n");
         
         zmq_msg_send(&request, requester, 0);
     }
