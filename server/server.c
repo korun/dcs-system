@@ -198,10 +198,10 @@ void *thread_operator(void *attr){
                                                 reply_id = DCS_SERVER_REPLY_FULL;
                                                 DEBUGMSG(syslog(LOG_DEBUG, "Суммы различны\n"));
                                             }
-                                            /* else{
+                                            else{
                                                 //~ Суммы совпали, всё хорошо.
                                                 reply_id = DCS_SERVER_REPLY_OK;
-                                            }*/
+                                            }
                                         }
                                         else{ /* Компьютера в хэше нет. */
                                             reply_id = DCS_SERVER_REPLY_FULL;
@@ -215,14 +215,15 @@ void *thread_operator(void *attr){
                                     if(sep){
                                         *sep   = '\0';
                                         domain = message;
+                                        size_t domain_size;
                                         CL_Detail *details;
                                         size_t     details_count;
                                         unsigned char *hwdata = (unsigned char *) sep + 1;
                                         msg_size -= (MSG_DIGEST_SIZE + 2 + (
                                                 (size_t) (unsigned int) sep - (unsigned int) message));
                                         
-                                        comp = Hash_find(&server_pool.hash, domain,
-                                            (size_t) (unsigned int) sep - (unsigned int) message);
+                                        domain_size = (size_t) ((unsigned int) sep - (unsigned int) message);
+                                        comp = Hash_find(&server_pool.hash, domain, domain_size);
                                         if(comp){
                                             //~ sync_comp();
                                         }
@@ -256,12 +257,9 @@ void *thread_operator(void *attr){
                                                                     details[i].bus_addr,
                                                                     details[i].serial_length
                                                 ));
-                                                DEBUGMSG(syslog(LOG_DEBUG, "HERE2! %d", details[i].serial_length));
                                                 memcpy(&details[i].serial, hwdata_p, details[i].serial_length);
                                                 hwdata_p += details[i].serial_length;
-                                                DEBUGMSG(syslog(LOG_DEBUG, "HERE2.1!"));
                                                 details[i].serial[details[i].serial_length] = '\0';
-                                                DEBUGMSG(syslog(LOG_DEBUG, "HERE3!"));
                                                 details[i].params_length = get_uint32_from(hwdata_p);
                                                 hwdata_p += sizeof(uint32_t);
                                                 DEBUGMSG(syslog(LOG_DEBUG, "HERE4! params_length: %d", details[i].params_length));
@@ -285,7 +283,14 @@ void *thread_operator(void *attr){
                                                     break;
                                                 }
                                             }
-                                            
+                                            /* Считаем md5 и хэшируем результат */
+                                            MD5_CTX mdcontext;
+                                            MD5Init(&mdcontext);
+                                            MD5Update(&mdcontext, hwdata, msg_size);
+                                            MD5Final(digest, &mdcontext);
+                                            if(!Hash_insert(&server_pool.hash, domain, domain_size, (char *) digest, MSG_DIGEST_SIZE)){
+                                                DEBUGMSG(syslog(LOG_DEBUG, "Hash insert error: %d\n", errno));
+                                            }
                                         }
                                     }
                                     break;

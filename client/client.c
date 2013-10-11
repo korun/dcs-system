@@ -14,7 +14,6 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <zmq.h>
-#include <arpa/inet.h>
 
 #include "gethwdata.h"
 #include "../dbdef.h"
