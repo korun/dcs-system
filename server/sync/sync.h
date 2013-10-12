@@ -9,6 +9,9 @@
     <LIBDIR>     - /usr/lib/               (try: $ pg_config --libdir)
 **/
 
+#ifndef	_SYNC_H
+#define _SYNC_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,3 +63,5 @@ int DB_put_configs(Database *db, const LC_Config *confs, size_t configs_count);
 int DB_put_comps(Database *db, const LC_Computer *comps, size_t comps_count);
 int DB_put_details(Database *db, const LC_Detail *details, size_t details_count);
 */
+
+#endif /* sync.h */

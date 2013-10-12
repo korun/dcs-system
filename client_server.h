@@ -6,12 +6,12 @@
     Здесь находятся константы, используемые как клиентом так и сервером.
 **/
 
+#ifndef	_CLIENT_SERVER_H
+#define _CLIENT_SERVER_H
+
 #include <stdint.h>
 #include <arpa/inet.h>
 #include "dbdef.h"
-
-#ifndef	_CLIENT_SERVER_H
-#define _CLIENT_SERVER_H
 
 #define DEFAULT_SERVER_ADDR                "tcp://*:8000"
 #define DEFAULT_SERVER_ADDR_FOR_CLIENT     "tcp://localhost:8000"

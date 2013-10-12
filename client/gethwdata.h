@@ -1,5 +1,8 @@
 /* encoding: UTF-8 */
 
+#ifndef	_GETHWDATA_H
+#define _GETHWDATA_H
+
 #include "../client_server.h"
 
 CL_Detail *gethwdata(size_t *arr_size);
@@ -50,3 +53,4 @@ CL_Detail *gethwdata(size_t *arr_size);
    ---   40   Additional Information
          41   Onboard Device
 */
+#endif /* gethwdata.h */
