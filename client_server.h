@@ -44,14 +44,16 @@
         }
 
 #define get_uint32_from(POINTER) ntohl((uint32_t) *((uint32_t *) (POINTER)))
+#define get_uint16_from(POINTER) ntohs((uint16_t) *((uint16_t *) (POINTER)))
+#define get_uint8_from(POINTER)       ((uint8_t)  *((uint8_t  *) (POINTER)))
 
 typedef struct {
     uint32_t id;
-    uint32_t vendor_id;
-    uint32_t device_id;
+    uint16_t vendor_id;
+    uint16_t device_id;
     uint32_t subsystem_id;
     uint32_t class_code;
-    uint32_t revision;
+    uint8_t  revision;
     char     bus_addr[6];
     size_t   serial_length;
     char     serial[DETAIL_SERIAL_SIZE + 1]; /* + '\0' */

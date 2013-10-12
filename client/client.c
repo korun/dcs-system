@@ -35,6 +35,14 @@
         memcpy((void *) (DEST), (void *) &(ordered_int32), sizeof(uint32_t));   \
     } while(0)
 
+#define store_uint16_to(DEST, UINT16)                                           \
+    do {                                                                        \
+        uint16_t ordered_int16 = htons((uint16_t) (UINT16));                    \
+        memcpy((void *) (DEST), (void *) &(ordered_int16), sizeof(uint16_t));   \
+    } while(0)
+
+#define store_uint8_to(DEST, UINT8) (*(DEST) = (uint8_t) (UINT8))
+
 #define SHIFT_AND_INC(POINTER, SIZE, VAL)   \
     do {                                    \
         (POINTER) += (VAL);                 \
@@ -159,56 +167,61 @@ int main (int argc, char **argv) {
     
     for(int i = 0; i < details_size; i++){
         unsigned char *print_pointer = tmp_p; /* debug only */
-        store_uint32_to(tmp_p, details[i].vendor_id);
-            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(uint32_t));
-        store_uint32_to(tmp_p, details[i].device_id);
-            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(uint32_t));
+        store_uint16_to(tmp_p, details[i].vendor_id);
+            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(details[i].vendor_id));
+        store_uint16_to(tmp_p, details[i].device_id);
+            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(details[i].device_id));
         store_uint32_to(tmp_p, details[i].subsystem_id);
-            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(uint32_t));
+            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(details[i].subsystem_id));
         store_uint32_to(tmp_p, details[i].class_code);
-            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(uint32_t));
-        store_uint32_to(tmp_p, details[i].revision);
-            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(uint32_t));
+            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(details[i].class_code));
+        store_uint8_to(tmp_p, details[i].revision);
+            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(details[i].revision));
         memcpy(tmp_p, &details[i].bus_addr, sizeof(details[i].bus_addr));
             SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(details[i].bus_addr));
         store_uint32_to(tmp_p, details[i].serial_length);
-            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(uint32_t));
-		memcpy(tmp_p, details[i].serial, details[i].serial_length);
+            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(details[i].serial_length));
+        memcpy(tmp_p, details[i].serial, details[i].serial_length);
             SHIFT_AND_INC(tmp_p, hw_list_size, details[i].serial_length);
         store_uint32_to(tmp_p, details[i].params_length);
-            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(uint32_t));
+            SHIFT_AND_INC(tmp_p, hw_list_size, sizeof(details[i].params_length));
         memcpy(tmp_p, details[i].params, details[i].params_length);
             SHIFT_AND_INC(tmp_p, hw_list_size, details[i].params_length);
         
         printf("ID's:\t%.4x:%.4x:%.8x\n",
-			details[i].vendor_id,
-			details[i].device_id,
-			details[i].subsystem_id);
+            details[i].vendor_id,
+            details[i].device_id,
+            details[i].subsystem_id);
         printf("    :\t%.4x:%.4x:%.8x\n",
-			get_uint32_from(print_pointer),
-			get_uint32_from(print_pointer + 4),
-			get_uint32_from(print_pointer + 8)
+            get_uint16_from(print_pointer),
+            get_uint16_from(print_pointer + sizeof(uint16_t)),
+            get_uint32_from(print_pointer + sizeof(uint16_t) * 2)
         );
-		printf("Class:\t%.6x (rev: %.2x)\n",
-			details[i].class_code, details[i].revision);
-		printf("     :\t%.6x (   : %.2x)\n",
-			get_uint32_from(print_pointer + 12),
-            get_uint32_from(print_pointer + 16)
+        int shift = sizeof(uint16_t) * 2;
+        printf("Class:\t%.6x (rev: %.2x)\n",
+            details[i].class_code, details[i].revision);
+        printf("     :\t%.6x (   : %.2x)\n",
+            get_uint32_from(print_pointer + shift + sizeof(uint32_t)),
+            get_uint8_from(print_pointer + shift + sizeof(uint32_t) * 2)
         );
+        shift += sizeof(uint32_t) * 2;
         printf("Bus:\t\t'%s'\nSerial[%u]:\t'%s'\n",
-			details[i].bus_addr, details[i].serial_length, details[i].serial);
+            details[i].bus_addr, details[i].serial_length, details[i].serial);
         printf("   :\t\t'%s'\n      [%u]:\t'%s'\n",
-            (print_pointer + 20), get_uint32_from(print_pointer + 26), (print_pointer + 30));
+            (print_pointer + shift + sizeof(uint8_t)),
+            get_uint32_from(print_pointer + shift + sizeof(uint8_t) + sizeof(details[i].bus_addr)),
+            (print_pointer + shift + sizeof(uint8_t) + sizeof(details[i].bus_addr) + sizeof(uint32_t)));
+        shift += sizeof(uint8_t) + sizeof(details[i].bus_addr) + sizeof(uint32_t);
         printf("Params[%d]:\t%s\n", details[i].params_length,
-			details[i].params);
-        printf("      [%d]:\t%s\n", get_uint32_from(print_pointer + 30 + details[i].serial_length),
-            (print_pointer + 34 + details[i].serial_length));
+            details[i].params);
+        printf("      [%d]:\t%s\n", get_uint32_from(print_pointer + shift + details[i].serial_length),
+            (print_pointer + shift + details[i].serial_length + sizeof(uint32_t)));
         printf("tmp_p(int): %.8x\n", (unsigned int) (tmp_p));
         printf("hw_list_size: %d\n", (unsigned int) (hw_list_size));
         printf("------------------------------------\n");
         
         free(details[i].params);
-	}
+    }
     
     free(details);
     //~ return 0;

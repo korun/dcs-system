@@ -32,7 +32,6 @@ int msg_digest(char *msg, const char *salt_fd_path,
     int len;
     FILE *file;
     MD5_CTX context;
-    //~ unsigned char digest[MSG_DIGEST_SIZE];
     unsigned char buffer[1024];
     
     if((file = fopen(salt_fd_path, "r")) == NULL)

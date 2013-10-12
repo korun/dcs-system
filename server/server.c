@@ -234,20 +234,20 @@ void *thread_operator(void *attr){
                                             
                                             unsigned char *hwdata_p = hwdata;
                                             for(int i = 0; i < 40; i++){
-                                                details[i].vendor_id = get_uint32_from(hwdata_p);
-                                                hwdata_p += sizeof(uint32_t);
-                                                details[i].device_id = get_uint32_from(hwdata_p);
-                                                hwdata_p += sizeof(uint32_t);
+                                                details[i].vendor_id = get_uint16_from(hwdata_p);
+                                                hwdata_p += sizeof(details[i].vendor_id);
+                                                details[i].device_id = get_uint16_from(hwdata_p);
+                                                hwdata_p += sizeof(details[i].device_id);
                                                 details[i].subsystem_id = get_uint32_from(hwdata_p);
-                                                hwdata_p += sizeof(uint32_t);
+                                                hwdata_p += sizeof(details[i].subsystem_id);
                                                 details[i].class_code = get_uint32_from(hwdata_p);
-                                                hwdata_p += sizeof(uint32_t);
-                                                details[i].revision = get_uint32_from(hwdata_p);
-                                                hwdata_p += sizeof(uint32_t);
+                                                hwdata_p += sizeof(details[i].class_code);
+                                                details[i].revision = get_uint8_from(hwdata_p);
+                                                hwdata_p += sizeof(details[i].revision);
                                                 memcpy(&details[i].bus_addr, hwdata_p, sizeof(details[i].bus_addr));
                                                 hwdata_p += sizeof(details[i].bus_addr);
                                                 details[i].serial_length = get_uint32_from(hwdata_p);
-                                                hwdata_p += sizeof(uint32_t);
+                                                hwdata_p += sizeof(details[i].serial_length);
                                                 DEBUGMSG(syslog(LOG_DEBUG, "Detail: %.4x:%.4x:%.8x (rev %.2x) [class: %.6x] Bus: '%s', SL '%u'",
                                                                     details[i].vendor_id,
                                                                     details[i].device_id,
@@ -261,7 +261,7 @@ void *thread_operator(void *attr){
                                                 hwdata_p += details[i].serial_length;
                                                 details[i].serial[details[i].serial_length] = '\0';
                                                 details[i].params_length = get_uint32_from(hwdata_p);
-                                                hwdata_p += sizeof(uint32_t);
+                                                hwdata_p += sizeof(details[i].params_length);
                                                 DEBUGMSG(syslog(LOG_DEBUG, "HERE4! params_length: %d", details[i].params_length));
                                                 details[i].params = (char *) calloc(sizeof(char), details[i].params_length);
                                                 memcpy(details[i].params, hwdata_p, details[i].params_length);

@@ -1,7 +1,6 @@
 /* encoding: UTF-8 */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include "strxtoi.h"
 
 static int ctoi(const char chr) {
 	if(chr >= '0' && chr <= '9') return (int) (chr - '0');
@@ -10,12 +9,11 @@ static int ctoi(const char chr) {
 	return -1;
 }
 
-int strxtoi(const char *str, size_t length){
-	int i, digit, pow_16;
+uint32_t strxtoi(const char *str, size_t length){
 	int ret_val = 0;
-	pow_16 = 1;
-	for(i = length - 1; i > -1; i--){
-		digit = ctoi(str[i]);
+	int pow_16  = 1;
+	for(int i = length - 1; i > -1; i--){
+		int digit = ctoi(str[i]);
 		if (digit >= 0){
 			ret_val += pow_16 * digit;
 			pow_16  *= 16;
