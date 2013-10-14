@@ -7,10 +7,13 @@ dcs-system
 ###Первичная настройка
 1. _Debian - configure grub to optimal resolution_
 2. _[*]_ apt-get g++
-3. _install ZeroMQ_ - ./configure && make && make install _(не забыть ldconfig)_
-4. apt-get install postgresql-9.1
-5. passwd postgres
-6. su postgres
+3. _[* для клиента]_ apt-get biosdecode
+4. _[* для клиента]_ apt-get lspci
+5. _[* для клиента]_ apt-get dmidecode
+6. _install ZeroMQ_ - ./configure && make && make install _(не забыть ldconfig)_
+7. apt-get install postgresql-9.1
+8. passwd postgres
+9. su postgres
     * psql
     * ALTER USER postgres WITH PASSWORD '12345';
     * CREATE USER dcs_server WITH LOGIN REPLICATION ENCRYPTED PASSWORD '12345';
