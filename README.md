@@ -5,19 +5,24 @@ dcs-system
 
 ##Установка
 ###Первичная настройка
-1. _Debian - configure grub to optimal resolution_
-2. _[*]_ apt-get g++
-3. _[* для клиента]_ apt-get biosdecode
-4. _[* для клиента]_ apt-get lspci
-5. _[* для клиента]_ apt-get dmidecode
-6. _install ZeroMQ_ - ./configure && make && make install _(не забыть ldconfig)_
-7. apt-get install postgresql-9.1
-8. passwd postgres
-9. su postgres
-    * psql
-    * ALTER USER postgres WITH PASSWORD '12345';
-    * CREATE USER dcs_server WITH LOGIN REPLICATION ENCRYPTED PASSWORD '12345';
-    * CREATE DATABASE dcs_db WITH OWNER dcs_server;
+```bash
+apt-get g++ # если его нет
+apt-get biosdecode # для клиента
+apt-get lspci # для клиента
+apt-get dmidecode # для клиента
+# Ставим ZeroMQ
+tar xzvpf zeromq-4.0.1.tar.gz.tar.gz && cd zeromq-4.0.1 && ./configure && make && make install
+apt-get install postgresql-9.1
+ldconfig # если нужно
+passwd postgres
+su postgres -c psql
+```
+Затем:
+```sql
+ALTER USER postgres WITH PASSWORD '12345';
+CREATE USER dcs_server WITH LOGIN REPLICATION ENCRYPTED PASSWORD '12345';
+CREATE DATABASE dcs_db WITH OWNER dcs_server;
+```
 
 ###Сборка
 За сборку отвечают файлы compile_server.sh и compile_client.sh
