@@ -21,8 +21,9 @@
 #define MSG_DIGEST_SIZE         16
 #define MSG_CTRL_BYTE           MSG_DIGEST_SIZE /* т.к. нумерация начинается с 0 */
 #define MSG_SEPARATOR           '|'
-#define MSG_SALT_PATH           "/home/kia84/Documents/dcs/salt"
-//~ #define MSG_SALT_PATH           "/home/kia84/Device_Control_System/salt"
+#ifndef	MSG_SALT_PATH
+#   define MSG_SALT_PATH           "/home/kia84/Documents/dcs/salt"
+#endif
 
 /* Type - signed char (!) */
 #define DCS_CLIENT_REQ_MD5      0x01
