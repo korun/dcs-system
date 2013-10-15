@@ -21,7 +21,17 @@ dcs-system
 
 ###Сборка
 За сборку отвечают файлы compile_server.sh и compile_client.sh
-Для сервера можно указать ключ - устанавливать ли обработчики сигналов CATCH_SIGNAL=[0|1]
+
+Чтобы всё работало корректно, нужно устанавливать переменную среды MSG_SALT_PATH. Она должна указывать на
+[файл с 'солью'](https://github.com/kia84/dcs-system/blob/master/salt), например:
+```bash
+env MSG_SALT_PATH=/home/user1/projects/dcs/salt ./compile_client.sh
+```
+Для сервера кроме этого ключа можно указать следующие:
+
+1. CATCH_SIGNAL=[0|1] # устанавливать ли обработчики сигналов
+2. USR_LIB="/usr/lib" # директория с библиотеками (используется для libpq)
+3. POSTGRESQL_LIB="/usr/include/postgresql" # директория с библиотеками (используется для libpq)
 
 ##Запуск
 Основной ключ для отладки: -v (be verbose)
