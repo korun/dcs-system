@@ -33,8 +33,12 @@
         vendor_id    INTEGER,
         device_id    INTEGER,
         subsystem_id INTEGER,
+        class_code   INTEGER,
+        revision     INTEGER,
+        bus_addr     TEXT,
         serial       TEXT,           -- не больше DETAIL_SERIAL_SIZE
-        created_at   TEXT DEFAULT(datetime('now', 'localtime'))
+        created_at   TEXT DEFAULT(datetime('now', 'localtime')),
+        params       TEXT
     );
     CONFIGS_TABNAME(
         id           INTEGER PRIMARY KEY,
@@ -62,6 +66,7 @@
 
 #define _XOPEN_SOURCE
 #include <time.h>       /* Содержит time_t и функции преобразования. */
+#include <stdint.h>     /* uint32_t etc. */
 
 #include "../dbdef.h"   /* Содержит информацию о таблицах в БД.  */
 #include "sqlite3.h"    /* sqlite3 API */
@@ -112,14 +117,16 @@ typedef struct {
 } LC_Computer;
 
 typedef struct {
-    unsigned int id;
-    unsigned int vendor_id;
-    unsigned int device_id;
-    unsigned int subsystem_id;
-    unsigned int class_code;
-    unsigned int revision;
-    char         serial[DETAIL_SERIAL_SIZE + 1]; /* + '\0' */
-    time_t       created_at;
+    uint32_t id;
+    uint16_t vendor_id;
+    uint16_t device_id;
+    uint32_t subsystem_id;
+    uint32_t class_code;
+    uint8_t  revision;
+    char     bus_addr[6];
+    char     serial[DETAIL_SERIAL_SIZE + 1]; /* + '\0' */
+    time_t   created_at;
+    char    *params;
 } LC_Detail;
 
 typedef struct {
@@ -206,11 +213,8 @@ int Cache_put_comp(
         time_t        created_at    /* необязательный аргумент, 0 - DEFAULT */
     );
 int Cache_put_detail(
-        LocalCache   *cache,
-        unsigned int  vendor_id,
-        unsigned int  device_id,
-        unsigned int  subsystem_id,
-        const char   *serial        /* необязательный аргумент, NULL */
+        LocalCache      *cache,
+        const LC_Detail *detail
     );
 int Cache_put_config(
         LocalCache   *cache,
@@ -259,6 +263,10 @@ LC_Detail *Cache_get_details(
         LocalCache  *cache,
         size_t      *el_count,
         unsigned int id
+    );
+int Cache_get_detail_id(
+        LocalCache *cache,
+        LC_Detail  *detail
     );
 LC_Config *Cache_get_configs(
         LocalCache  *cache,

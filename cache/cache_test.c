@@ -43,9 +43,9 @@
     
     typedef struct {
         unsigned int id;
-        unsigned int vendor_id;
-        unsigned int device_id;
-        unsigned int subsystem_id;
+        uint16_t vendor_id;
+        uint16_t device_id;
+        uint32_t subsystem_id;
         char serial[DETAIL_SERIAL_SIZE + 1]; /* + '\0' */
         time_t created_at;
         time_t accepted_at;
@@ -95,10 +95,15 @@ void put_comp(LocalCache * cache, int id, const char * domain, const char * md5,
     printf("Put comp: %d\t- %s.\n", rc, error_sql_text(rc, cache->db));
 }
 
-void put_detail(LocalCache * cache, int vid, int did, int sid, const char * md5){
-    int rc;
+void put_detail(LocalCache *cache, int vid, int did, int sid, const char *serial){
+    LC_Detail new_detail;
+    memset(&new_detail, 0, sizeof(LC_Detail));
+    new_detail.vendor_id    = vid;
+    new_detail.device_id    = did;
+    new_detail.subsystem_id = sid;
+    strcpy(new_detail.serial, serial);
     
-    rc = Cache_put_detail(cache, vid, did, sid, md5);
+    int rc = Cache_put_detail(cache, &new_detail);
     printf("Put detail: %d\t- %s.\n", rc, error_sql_text(rc, cache->db));
 }
 
@@ -183,10 +188,10 @@ void set_detail(
     
     memset(&tm, 0, sizeof(struct tm));
     
-    base_details[i].id = id;
-    base_details[i].vendor_id = vid;
-    base_details[i].device_id = did;
-    base_details[i].subsystem_id = sid;
+    base_details[i].id = (uint32_t) id;
+    base_details[i].vendor_id = (uint16_t) vid;
+    base_details[i].device_id = (uint16_t) did;
+    base_details[i].subsystem_id = (uint32_t) sid;
     
     snprintf(base_details[i].serial, DETAIL_SERIAL_SIZE, "%s", gen_sn(serial_no));
     

@@ -87,8 +87,10 @@ int Cache_init(const char *path, LocalCache *cache) {
             "subsystem_id INTEGER, "
             "class_code   INTEGER, "
             "revision     INTEGER, "
+            "bus_addr     TEXT, "
             "serial       TEXT, "
-            "created_at   TEXT DEFAULT("SQLITE_NOW_DATETIME")"
+            "created_at   TEXT DEFAULT("SQLITE_NOW_DATETIME"), "
+            "params       TEXT"
         ");", DETAILS_TABNAME);
     if(rc < 0)    return rc;
 
@@ -160,10 +162,12 @@ int Cache_commit(LocalCache *cache){
         cache->begin = 0;
     return rc;
 }
+
 int Cache_try_begin(LocalCache *cache){
     if(cache->begin) return SQLITE_OK;
     return Cache_begin(cache);
 }
+
 int Cache_put_log(LocalCache *cache, const char *domain, const char *md5sum){
     int   rc;
     char *query;
@@ -217,19 +221,25 @@ int Cache_put_comp(
 }
 
 int Cache_put_detail(
-        LocalCache   *cache,
-        unsigned int  vendor_id,
-        unsigned int  device_id,
-        unsigned int  subsystem_id,
-        const char   *serial
+        LocalCache      *cache,
+        const LC_Detail *detail
     ){
     int   rc;
     char *query;
 
     query = sqlite3_mprintf("INSERT INTO "DETAILS_TABNAME
-                                "(vendor_id, device_id, subsystem_id, serial) "
-                                "VALUES(%d, %d, %d, %Q);",
-                                vendor_id, device_id, subsystem_id, serial);
+                                "(vendor_id, device_id, subsystem_id, "
+                                "class_code, revision, bus_addr, serial, params) "
+                                "VALUES(%d, %d, %d, %d, %Q, %Q, %Q);",
+                                detail->vendor_id,
+                                detail->device_id,
+                                detail->subsystem_id,
+                                detail->class_code,
+                                detail->revision,
+                                detail->bus_addr,
+                                detail->serial,
+                                detail->params
+                            );
 
     rc    = sqlite3_exec(cache->db, query, NULL, 0, NULL);
 
@@ -650,6 +660,45 @@ LC_Detail *Cache_get_details(
                                     _Cache_set_detail, query);
     sqlite3_free(query);
     return finded_details;
+}
+
+int Cache_get_detail_id(
+        LocalCache *cache,
+        LC_Detail  *detail
+    ){
+    sqlite3_stmt *res;
+    char         *query;
+    size_t        arr_size;
+    LC_Detail    *finded_details = NULL;
+
+    query = sqlite3_mprintf("SELECT id "
+                                "FROM "DETAILS_TABNAME" "
+                                "WHERE vendor_id = %d AND "
+                                    "device_id = %d AND "
+                                    "subsystem_id = %d AND "
+                                    "class_code = %d AND "
+                                    "revision = %d AND "
+                                    "serial LIKE %Q "
+                                "ORDER BY created_at DESC "
+                                "LIMIT 1;",
+                                detail->vendor_id,
+                                detail->device_id,
+                                detail->subsystem_id,
+                                detail->class_code,
+                                detail->revision,
+                                detail->serial
+                            );
+
+    rc = sqlite3_prepare_v2(cache->db, query, strlen(query), &res, NULL);
+
+    if (rc == SQLITE_OK) {
+        if(sqlite3_step(res) == SQLITE_ROW)
+            detail->id = (uint32_t) sqlite3_column_int(res, 0);
+        sqlite3_finalize(res);
+    }
+    
+    sqlite3_free(query);
+    return rc;
 }
 
 LC_Config *Cache_get_configs(
