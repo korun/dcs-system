@@ -668,8 +668,6 @@ int Cache_get_detail_id(
     ){
     sqlite3_stmt *res;
     char         *query;
-    size_t        arr_size;
-    LC_Detail    *finded_details = NULL;
 
     query = sqlite3_mprintf("SELECT id "
                                 "FROM "DETAILS_TABNAME" "
@@ -689,7 +687,7 @@ int Cache_get_detail_id(
                                 detail->serial
                             );
 
-    rc = sqlite3_prepare_v2(cache->db, query, strlen(query), &res, NULL);
+    int rc = sqlite3_prepare_v2(cache->db, query, strlen(query), &res, NULL);
 
     if (rc == SQLITE_OK) {
         if(sqlite3_step(res) == SQLITE_ROW)
