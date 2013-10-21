@@ -230,7 +230,7 @@ int Cache_put_detail(
     query = sqlite3_mprintf("INSERT INTO "DETAILS_TABNAME
                                 "(vendor_id, device_id, subsystem_id, "
                                 "class_code, revision, bus_addr, serial, params) "
-                                "VALUES(%d, %d, %d, %d, %Q, %Q, %Q);",
+                                "VALUES(%d, %d, %d, %d, %d, %Q, %Q, %Q);",
                                 detail->vendor_id,
                                 detail->device_id,
                                 detail->subsystem_id,

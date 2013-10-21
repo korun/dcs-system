@@ -91,8 +91,86 @@ void correct_exit(){
     exit(EXIT_SUCCESS);
 }
 
-void sync_comp(){
+void sync_comp(HASH_ELEMENT *comp, CL_Detail *details, size_t details_count){
+    /* TODO: Errors!!! */
+    size_t rec_count = 0;
+    /*size_t cache_details_count = 0;*/
+    LC_Computer *cache_comp = NULL;
+    /*LC_Config *cache_configs = NULL;*/
+    DEBUGMSG(syslog(LOG_DEBUG, "Now sync_comp!\n"));
+    /* Фиксируем срарт машины с указанной md5-суммой */
+    Cache_put_log(&server_pool.cache, comp->key, comp->val);
+    /* Получаем компьютер из кэша (вместе с элементами) */
+    cache_comp = Cache_get_comps(&server_pool.cache, &rec_count, 0, comp->key);
+    DEBUGMSG(syslog(LOG_DEBUG, "cache_comp: %.8x\n", (uint32_t) cache_comp));
+    if(cache_comp){
+        /* Обновляем md5 */
+        Cache_upd_comp(&server_pool.cache, cache_comp->id, cache_comp->db_id, comp->val);
+        /* Получаем список конфигураций для данного компьютера */
+        /*cache_configs = Cache_get_configs(&server_pool.cache, &rec_count, cache_comp->id, 0);*/
+    }
+    else{
+        /* В кэше компа нет, можно брать и записывать */
+        /* Добавляем компьютер */
+        Cache_put_comp(&server_pool.cache, 0, comp->key, comp->val, 0);
+        cache_comp = Cache_get_comps(&server_pool.cache, &rec_count, 0, comp->key);
+    }
     
+    for(int i = 0; i < details_count; i++){
+        LC_Detail new_detail;
+        memset(&new_detail, 0, sizeof(LC_Detail));
+        DEBUGMSG(syslog(LOG_DEBUG, "new_detail %d\n", i));
+        new_detail.vendor_id    = details[i].vendor_id;
+        new_detail.device_id    = details[i].device_id;
+        new_detail.subsystem_id = details[i].subsystem_id;
+        new_detail.class_code   = details[i].class_code;
+        new_detail.revision     = details[i].revision;
+        DEBUGMSG(syslog(LOG_DEBUG, "bus_addr\n"));
+        strncpy(new_detail.bus_addr, details[i].bus_addr, 6);
+        DEBUGMSG(syslog(LOG_DEBUG, "serial\n"));
+        strcpy(new_detail.serial, details[i].serial);
+        if(details[i].params_length){
+            DEBUGMSG(syslog(LOG_DEBUG, "calloc\n"));
+            new_detail.params = (char *) calloc(details[i].params_length, sizeof(char));
+            DEBUGMSG(syslog(LOG_DEBUG, "params\n"));
+            strncpy(new_detail.params, details[i].params, details[i].params_length);
+        }
+        DEBUGMSG(syslog(LOG_DEBUG, "Cache_put_detail\n"));
+        Cache_put_detail(&server_pool.cache, &new_detail);
+        DEBUGMSG(syslog(LOG_DEBUG, "Cache_get_detail_id\n"));
+        Cache_get_detail_id(&server_pool.cache, &new_detail);
+        /* details[i].id = new_detail.id; */
+        DEBUGMSG(syslog(LOG_DEBUG, "Cache_put_config\n"));
+        Cache_put_config(&server_pool.cache, cache_comp->id, new_detail.id, 0);
+        DEBUGMSG(syslog(LOG_DEBUG, "free\n"));
+        if(new_detail.params) free(new_detail.params);
+    }
+    DEBUGMSG(syslog(LOG_DEBUG, "cycle_complete!\n"));
+    /*LC_Detail *cache_details = Cache_get_details(&server_pool.cache, &cache_details_count, 0);
+    for(int i = 0; i < cache_details_count; i++){
+        for(int j = 0; j < details_count; j++){
+            if(!(
+                cache_details[i].vendor_id == details[j].vendor_id &&
+                cache_details[i].device_id == details[j].device_id &&
+                cache_details[i].subsystem_id == details[j].subsystem_id &&
+                cache_details[i].class_code == details[j].class_code &&
+                cache_details[i].revision == details[j].revision &&
+                !strncmp(cache_details[i].serial, details[j].serial, details[j].serial_length)
+            )){*/ /* Детали в кэше нет - добавляем! */
+                /*Cache_put_detail(
+                    &server_pool.cache,
+                    details[j].vendor_id,
+                    details[j].device_id,
+                    details[j].subsystem_id,
+                    details[j].serial
+                );
+            }
+        }
+    }
+    
+    if(cache_details) free(cache_details);
+    if(cache_configs) free(cache_configs);*/
+    if(cache_comp) free(cache_comp);
 }
 
 void *thread_synchronizer(void *attr){
@@ -110,7 +188,7 @@ void *thread_synchronizer(void *attr){
         syslog(LOG_ERR, "Sync with db failed.");
     }
     ret = sync_cache_and_hash(&server_pool.cache, &server_pool.hash);
-    /* Wait conditions cycle here... */
+    /* TODO Wait conditions cycle here... */
     pthread_exit(NULL);
 }
 
@@ -223,11 +301,14 @@ void *thread_operator(void *attr){
                                                 (size_t) (unsigned int) sep - (unsigned int) message));
                                         
                                         domain_size = (size_t) ((unsigned int) sep - (unsigned int) message);
+                                        /* Считаем md5 */
+                                        MD5_CTX mdcontext;
+                                        MD5Init(&mdcontext);
+                                        MD5Update(&mdcontext, hwdata, msg_size);
+                                        MD5Final(digest, &mdcontext);
+                                        /* Ищем комп в хэше */
                                         comp = Hash_find(&server_pool.hash, domain, domain_size);
-                                        if(comp){
-                                            //~ sync_comp();
-                                        }
-                                        else{ /* Компьютера в хэше нет - новый компьютер. */
+                                        if(!comp){ /* Компьютера в хэше нет - новый компьютер. */
                                             DEBUGMSG(syslog(LOG_DEBUG, "Новая машина!"));
                                             //~ details = (CL_Detail *) calloc(sizeof(CL_Detail), 40);
                                             details = (CL_Detail *) malloc(sizeof(CL_Detail) * 40);
@@ -283,15 +364,25 @@ void *thread_operator(void *attr){
                                                     break;
                                                 }
                                             }
-                                            /* Считаем md5 и хэшируем результат */
-                                            MD5_CTX mdcontext;
-                                            MD5Init(&mdcontext);
-                                            MD5Update(&mdcontext, hwdata, msg_size);
-                                            MD5Final(digest, &mdcontext);
-                                            if(!Hash_insert(&server_pool.hash, domain, domain_size, (char *) digest, MSG_DIGEST_SIZE)){
+                                            /* Хэшируем результат */
+                                            comp = Hash_insert(&server_pool.hash,
+                                                               domain, domain_size,
+                                                               (char *) digest, MSG_DIGEST_SIZE);
+                                            if(!comp){
                                                 DEBUGMSG(syslog(LOG_DEBUG, "Hash insert error: %d\n", errno));
+                                                break;
                                             }
                                         }
+                                        else{
+                                            /* Есть в кэше, проверим md5 */
+                                            if(memcmp(comp->val, digest, HASH_ELEMENT_VAL_SIZE) == 0){
+                                                DEBUGMSG(syslog(LOG_DEBUG, "Суммы одинаковые, наверное ошибочный запрос\n"));
+                                            }
+                                            else{ /* Суммы различны (так и должно быть) - обновляем! */
+                                                memcpy(comp->val, digest, HASH_ELEMENT_VAL_SIZE);
+                                            }
+                                        }
+                                        sync_comp(comp, details, details_count);
                                     }
                                     break;
                                 default:
