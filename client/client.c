@@ -98,7 +98,6 @@ static int fill_message(
 }
 
 int main (int argc, char **argv) {
-    //~ pid_t pid, sid;
     int   be_verbose = 0;   /* Логический флаг "болтливости" */
     int   opt;              /* Буфер для распознания опций argv через getopt */
     char  server_addr[MAX_SERVER_ADDR_SIZE];    /* Адрес сервера */
@@ -113,30 +112,35 @@ int main (int argc, char **argv) {
     zmq_msg_t request;
     unsigned char *message;
     
-    /* Отделяемся от родительского процесса */
-    //~ pid = fork();
-    /* Если не проходит даже форк - значит дела совсем плохи -
-     * завершаем работу тут же. */
-    //~ if (pid < 0) {
-        //~ perror("fork()");
-        //~ exit(EXIT_FAILURE);
-    //~ }
-    
-    /* Если дочерний процесс порождён успешно, то родительский процесс можно завершить. */
-    //~ if (pid > 0) { exit(EXIT_SUCCESS); }
+    #ifdef NDEBUG
+        pid_t pid, sid;
+        /* Отделяемся от родительского процесса */
+        pid = fork();
+        /* Если не проходит даже форк - значит дела совсем плохи -
+         * завершаем работу тут же. */
+        if (pid < 0) {
+            perror("fork()");
+            exit(EXIT_FAILURE);
+        }
+        
+        /* Если дочерний процесс порождён успешно, то родительский процесс можно завершить. */
+        if (pid > 0) { exit(EXIT_SUCCESS); }
+    #endif
     
     /* Открытие журнала на запись */
     openlog(SELF_NAME, LOG_ODELAY|LOG_PERROR|LOG_PID, LOG_DAEMON);
     
-    /* Создание нового SID для дочернего процесса */
-    //~ sid = setsid();
-    /* Если получить sid не удалось - пытаемся сделать это ещё SETSID_ATEMPTS_COUNT раз */
-    //~ TRY_N_TIMES(SETSID_ATEMPTS_COUNT, (sid = setsid()), (sid < 0), "setsid()", LOG_CRIT);
-    /* Если после вышеописанных попыток sid всё равно не получен - завершаем работу. */
-    //~ if (sid < 0) {
-        //~ syslog(LOG_EMERG, "setsid(): %s.", strerror(errno));
-        //~ exit(EXIT_FAILURE);
-    //~ }
+    #ifdef NDEBUG
+        /* Создание нового SID для дочернего процесса */
+        sid = setsid();
+        /* Если получить sid не удалось - пытаемся сделать это ещё SETSID_ATEMPTS_COUNT раз */
+        TRY_N_TIMES(SETSID_ATEMPTS_COUNT, (sid = setsid()), (sid < 0), "setsid()", LOG_CRIT);
+        /* Если после вышеописанных попыток sid всё равно не получен - завершаем работу. */
+        if (sid < 0) {
+            syslog(LOG_EMERG, "setsid(): %s.", strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+    #endif
     
     /* Изменяем файловую маску - создаваемые файлы (etc) будут доступны
      * только для самого создавшего. 0666 & ~077 = 0600 */
@@ -154,8 +158,10 @@ int main (int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
     close_and_dup_stdfd(STDIN_FILENO,  null_fd);
-    //~ close_and_dup_stdfd(STDOUT_FILENO, null_fd);
-    //~ close_and_dup_stdfd(STDERR_FILENO, null_fd);
+    #ifdef NDEBUG
+        close_and_dup_stdfd(STDOUT_FILENO, null_fd);
+        close_and_dup_stdfd(STDERR_FILENO, null_fd);
+    #endif
     
     /* Получаем список всех деталей */
     CL_Detail *details;

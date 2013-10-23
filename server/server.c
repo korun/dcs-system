@@ -97,7 +97,7 @@ void sync_comp(HASH_ELEMENT *comp, CL_Detail *details, size_t details_count){
     /*size_t cache_details_count = 0;*/
     LC_Computer *cache_comp = NULL;
     /*LC_Config *cache_configs = NULL;*/
-    DEBUGMSG(syslog(LOG_DEBUG, "Now sync_comp!\n"));
+    //~ DEBUGMSG(syslog(LOG_DEBUG, "Now sync_comp!\n"));
     /* Фиксируем срарт машины с указанной md5-суммой */
     Cache_put_log(&server_pool.cache, comp->key, comp->val);
     /* Получаем компьютер из кэша (вместе с элементами) */
@@ -119,33 +119,32 @@ void sync_comp(HASH_ELEMENT *comp, CL_Detail *details, size_t details_count){
     for(int i = 0; i < details_count; i++){
         LC_Detail new_detail;
         memset(&new_detail, 0, sizeof(LC_Detail));
-        DEBUGMSG(syslog(LOG_DEBUG, "new_detail %d\n", i));
+        //~ DEBUGMSG(syslog(LOG_DEBUG, "new_detail %d\n", i));
         new_detail.vendor_id    = details[i].vendor_id;
         new_detail.device_id    = details[i].device_id;
         new_detail.subsystem_id = details[i].subsystem_id;
         new_detail.class_code   = details[i].class_code;
         new_detail.revision     = details[i].revision;
-        DEBUGMSG(syslog(LOG_DEBUG, "bus_addr\n"));
+        //~ DEBUGMSG(syslog(LOG_DEBUG, "bus_addr\n"));
         strncpy(new_detail.bus_addr, details[i].bus_addr, 6);
-        DEBUGMSG(syslog(LOG_DEBUG, "serial\n"));
+        //~ DEBUGMSG(syslog(LOG_DEBUG, "serial\n"));
         strcpy(new_detail.serial, details[i].serial);
         if(details[i].params_length){
-            DEBUGMSG(syslog(LOG_DEBUG, "calloc\n"));
+            //~ DEBUGMSG(syslog(LOG_DEBUG, "calloc\n"));
             new_detail.params = (char *) calloc(details[i].params_length, sizeof(char));
-            DEBUGMSG(syslog(LOG_DEBUG, "params\n"));
+            //~ DEBUGMSG(syslog(LOG_DEBUG, "params\n"));
             strncpy(new_detail.params, details[i].params, details[i].params_length);
         }
-        DEBUGMSG(syslog(LOG_DEBUG, "Cache_put_detail\n"));
+        //~ DEBUGMSG(syslog(LOG_DEBUG, "Cache_put_detail\n"));
         Cache_put_detail(&server_pool.cache, &new_detail);
-        DEBUGMSG(syslog(LOG_DEBUG, "Cache_get_detail_id\n"));
+        //~ DEBUGMSG(syslog(LOG_DEBUG, "Cache_get_detail_id\n"));
         Cache_get_detail_id(&server_pool.cache, &new_detail);
-        /* details[i].id = new_detail.id; */
-        DEBUGMSG(syslog(LOG_DEBUG, "Cache_put_config\n"));
+        //~ DEBUGMSG(syslog(LOG_DEBUG, "Cache_put_config\n"));
         Cache_put_config(&server_pool.cache, cache_comp->id, new_detail.id, 0);
-        DEBUGMSG(syslog(LOG_DEBUG, "free\n"));
+        //~ DEBUGMSG(syslog(LOG_DEBUG, "free\n"));
         if(new_detail.params) free(new_detail.params);
     }
-    DEBUGMSG(syslog(LOG_DEBUG, "cycle_complete!\n"));
+    //~ DEBUGMSG(syslog(LOG_DEBUG, "cycle_complete!\n"));
     /*LC_Detail *cache_details = Cache_get_details(&server_pool.cache, &cache_details_count, 0);
     for(int i = 0; i < cache_details_count; i++){
         for(int j = 0; j < details_count; j++){
@@ -423,7 +422,6 @@ static void close_and_dup_stdfd(int stdfd, int nullfd){
 }
 
 int main(int argc, char *argv[]) {
-    //~ pid_t pid, sid;
     pthread_attr_t pthread_attr;
     int   opt,               /* Буфер для распознания опций argv через getopt */
           opt_t = 0;         /* Указан ли ключ '-t' */
@@ -435,32 +433,37 @@ int main(int argc, char *argv[]) {
         sigset_t         sa_set;
     #endif
     
-    /* Отделяемся от родительского процесса */
-    //~ pid = fork();
+    #ifdef NDEBUG
+        pid_t pid, sid;
+        /* Отделяемся от родительского процесса */
+        pid = fork();
     
-    /* Если не проходит даже форк - значит дела совсем плохи -
-     * завершаем работу тут же. */
-    //~ if (pid < 0) {
-        //~ perror("fork()");
-        //~ exit(EXIT_FAILURE);
-    //~ }
+        /* Если не проходит даже форк - значит дела совсем плохи -
+         * завершаем работу тут же. */
+        if (pid < 0) {
+            perror("fork()");
+            exit(EXIT_FAILURE);
+        }
     
-    /* Если дочерний процесс порождён успешно, то родительский процесс можно завершить. */
-    //~ if (pid > 0) { exit(EXIT_SUCCESS); }
-    
+        /* Если дочерний процесс порождён успешно, то родительский процесс можно завершить. */
+        if (pid > 0) { exit(EXIT_SUCCESS); }
+    #endif
+
     /* Открытие журнала на запись */
     openlog(SELF_NAME, LOG_ODELAY|LOG_PERROR|LOG_PID, LOG_DAEMON);
-    
-    /* Создание нового SID для дочернего процесса */
-    //~ sid = setsid();
-    /* Если получить sid не удалось - пытаемся сделать это ещё SETSID_ATEMPTS_COUNT раз */
-    //~ TRY_N_TIMES(SETSID_ATEMPTS_COUNT, (sid = setsid()), (sid < 0), "setsid()", LOG_CRIT);
-    /* Если после вышеописанных попыток sid всё равно не получен - завершаем работу. */
-    //~ if (sid < 0) {
-        //~ syslog(LOG_EMERG, "setsid(): %s.", strerror(errno));
-        //~ exit(EXIT_FAILURE);
-    //~ }
-    
+
+    #ifdef NDEBUG
+        /* Создание нового SID для дочернего процесса */
+        sid = setsid();
+        /* Если получить sid не удалось - пытаемся сделать это ещё SETSID_ATEMPTS_COUNT раз */
+        TRY_N_TIMES(SETSID_ATEMPTS_COUNT, (sid = setsid()), (sid < 0), "setsid()", LOG_CRIT);
+        /* Если после вышеописанных попыток sid всё равно не получен - завершаем работу. */
+        if (sid < 0) {
+            syslog(LOG_EMERG, "setsid(): %s.", strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+    #endif
+
     #if CATCH_SIGNAL
         sigemptyset(&sa_set);
         sigaddset(&sa_set, SIGHUP);
@@ -492,8 +495,10 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
     close_and_dup_stdfd(STDIN_FILENO,  null_fd);
-    //~ close_and_dup_stdfd(STDOUT_FILENO, null_fd);
-    //~ close_and_dup_stdfd(STDERR_FILENO, null_fd);
+    #ifdef NDEBUG
+        close_and_dup_stdfd(STDOUT_FILENO, null_fd);
+        close_and_dup_stdfd(STDERR_FILENO, null_fd);
+    #endif
     
     /* Заполним страктуру значениями по-умолчанию */
     /*  server_pool.be_verbose    = 0;  */

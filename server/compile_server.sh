@@ -14,6 +14,7 @@ POSTGRESQL_LIB=${POSTGRESQL_LIB:="/usr/include/postgresql"}
 echo "POSTGRESQL_LIB is set to $POSTGRESQL_LIB"
 MSG_SALT_PATH=${MSG_SALT_PATH:="/home/kia84/Documents/dcs/salt"}
 echo "MSG_SALT_PATH is set to $MSG_SALT_PATH"
+echo
 
 cd ../cache/        &&
 ./compile_sqlite.sh &&
