@@ -194,37 +194,37 @@ int main (int argc, char **argv) {
         memcpy(tmp_p, details[i].params, details[i].params_length);
             SHIFT_AND_INC(tmp_p, hw_list_size, details[i].params_length);
         
-        printf("ID's:\t%.4x:%.4x:%.8x\n",
+        DEBUGMSG(printf("ID's:\t%.4x:%.4x:%.8x\n",
             details[i].vendor_id,
             details[i].device_id,
-            details[i].subsystem_id);
-        printf("    :\t%.4x:%.4x:%.8x\n",
+            details[i].subsystem_id));
+        DEBUGMSG(printf("    :\t%.4x:%.4x:%.8x\n",
             get_uint16_from(print_pointer),
             get_uint16_from(print_pointer + sizeof(uint16_t)),
             get_uint32_from(print_pointer + sizeof(uint16_t) * 2)
-        );
+        ));
         int shift = sizeof(uint16_t) * 2;
-        printf("Class:\t%.6x (rev: %.2x)\n",
-            details[i].class_code, details[i].revision);
-        printf("     :\t%.6x (   : %.2x)\n",
+        DEBUGMSG(printf("Class:\t%.6x (rev: %.2x)\n",
+            details[i].class_code, details[i].revision));
+        DEBUGMSG(printf("     :\t%.6x (   : %.2x)\n",
             get_uint32_from(print_pointer + shift + sizeof(uint32_t)),
             get_uint8_from(print_pointer + shift + sizeof(uint32_t) * 2)
-        );
+        ));
         shift += sizeof(uint32_t) * 2;
-        printf("Bus:\t\t'%s'\nSerial[%u]:\t'%s'\n",
-            details[i].bus_addr, details[i].serial_length, details[i].serial);
-        printf("   :\t\t'%s'\n      [%u]:\t'%s'\n",
+        DEBUGMSG(printf("Bus:\t\t'%s'\nSerial[%u]:\t'%s'\n",
+            details[i].bus_addr, details[i].serial_length, details[i].serial));
+        DEBUGMSG(printf("   :\t\t'%s'\n      [%u]:\t'%s'\n",
             (print_pointer + shift + sizeof(uint8_t)),
             get_uint32_from(print_pointer + shift + sizeof(uint8_t) + sizeof(details[i].bus_addr)),
-            (print_pointer + shift + sizeof(uint8_t) + sizeof(details[i].bus_addr) + sizeof(uint32_t)));
+            (print_pointer + shift + sizeof(uint8_t) + sizeof(details[i].bus_addr) + sizeof(uint32_t))));
         shift += sizeof(uint8_t) + sizeof(details[i].bus_addr) + sizeof(uint32_t);
-        printf("Params[%d]:\t%s\n", details[i].params_length,
-            details[i].params);
-        printf("      [%d]:\t%s\n", get_uint32_from(print_pointer + shift + details[i].serial_length),
-            (print_pointer + shift + details[i].serial_length + sizeof(uint32_t)));
-        printf("tmp_p(int): %.8x\n", (unsigned int) (tmp_p));
-        printf("hw_list_size: %d\n", (unsigned int) (hw_list_size));
-        printf("------------------------------------\n");
+        DEBUGMSG(printf("Params[%d]:\t%s\n", details[i].params_length,
+            details[i].params));
+        DEBUGMSG(printf("      [%d]:\t%s\n", get_uint32_from(print_pointer + shift + details[i].serial_length),
+            (print_pointer + shift + details[i].serial_length + sizeof(uint32_t))));
+        DEBUGMSG(printf("tmp_p(int): %.8x\n", (unsigned int) (tmp_p)));
+        DEBUGMSG(printf("hw_list_size: %d\n", (unsigned int) (hw_list_size)));
+        DEBUGMSG(printf("------------------------------------\n"));
         
         free(details[i].params);
     }

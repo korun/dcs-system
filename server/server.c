@@ -39,12 +39,6 @@
 
 #define ZMQ_INPROC_ADDR         "inproc://workers"
 
-#ifdef NDEBUG
-    #define DEBUGMSG(X)
-#else
-    #define DEBUGMSG(X) (X)
-#endif
-
 typedef struct dcs_server_server_pool{
     /* global */
     int        be_verbose;           /* Логический флаг "болтливости" */
@@ -93,11 +87,11 @@ void correct_exit(){
 
 void sync_comp(HASH_ELEMENT *comp, CL_Detail *details, size_t details_count){
     /* TODO: Errors!!! */
-    size_t rec_count = 0;
-    /*size_t cache_details_count = 0;*/
-    LC_Computer *cache_comp = NULL;
-    /*LC_Config *cache_configs = NULL;*/
-    //~ DEBUGMSG(syslog(LOG_DEBUG, "Now sync_comp!\n"));
+    size_t rec_count     = 0;
+    size_t configs_count = 0;
+    LC_Computer *cache_comp    = NULL;
+    LC_Config   *cache_configs = NULL;
+    
     /* Фиксируем срарт машины с указанной md5-суммой */
     Cache_put_log(&server_pool.cache, comp->key, comp->val);
     /* Получаем компьютер из кэша (вместе с элементами) */
@@ -107,75 +101,70 @@ void sync_comp(HASH_ELEMENT *comp, CL_Detail *details, size_t details_count){
         /* Обновляем md5 */
         Cache_upd_comp(&server_pool.cache, cache_comp->id, cache_comp->db_id, comp->val);
         /* Получаем список конфигураций для данного компьютера */
-        /*cache_configs = Cache_get_configs(&server_pool.cache, &rec_count, cache_comp->id, 0);*/
+        cache_configs = Cache_get_configs(&server_pool.cache, &configs_count, cache_comp->id, 0);
     }
-    else{
-        /* В кэше компа нет, можно брать и записывать */
+    else{ /* В кэше компа нет, можно брать и записывать */
         /* Добавляем компьютер */
         Cache_put_comp(&server_pool.cache, 0, comp->key, comp->val, 0);
+        /* Получаем обратно */
         cache_comp = Cache_get_comps(&server_pool.cache, &rec_count, 0, comp->key);
     }
     
     for(int i = 0; i < details_count; i++){
         LC_Detail new_detail;
         memset(&new_detail, 0, sizeof(LC_Detail));
-        //~ DEBUGMSG(syslog(LOG_DEBUG, "new_detail %d\n", i));
+        
         new_detail.vendor_id    = details[i].vendor_id;
         new_detail.device_id    = details[i].device_id;
         new_detail.subsystem_id = details[i].subsystem_id;
         new_detail.class_code   = details[i].class_code;
         new_detail.revision     = details[i].revision;
-        //~ DEBUGMSG(syslog(LOG_DEBUG, "bus_addr\n"));
-        strncpy(new_detail.bus_addr, details[i].bus_addr, 6);
-        //~ DEBUGMSG(syslog(LOG_DEBUG, "serial\n"));
         strcpy(new_detail.serial, details[i].serial);
-        if(details[i].params_length){
-            //~ DEBUGMSG(syslog(LOG_DEBUG, "calloc\n"));
-            new_detail.params = (char *) calloc(details[i].params_length, sizeof(char));
-            //~ DEBUGMSG(syslog(LOG_DEBUG, "params\n"));
-            strncpy(new_detail.params, details[i].params, details[i].params_length);
+        
+        if(Cache_get_detail_id(&server_pool.cache, &new_detail) || new_detail.id == 0){
+            /* В базе деталь не найдена! */
+            strncpy(new_detail.bus_addr, details[i].bus_addr, sizeof(new_detail.bus_addr));
+            if(details[i].params_length){
+                new_detail.params = (char *) calloc(details[i].params_length, sizeof(char));
+                strncpy(new_detail.params, details[i].params, details[i].params_length);
+            }
+            
+            Cache_put_detail(&server_pool.cache, &new_detail);
+            Cache_get_detail_id(&server_pool.cache, &new_detail);
         }
-        //~ DEBUGMSG(syslog(LOG_DEBUG, "Cache_put_detail\n"));
-        Cache_put_detail(&server_pool.cache, &new_detail);
-        //~ DEBUGMSG(syslog(LOG_DEBUG, "Cache_get_detail_id\n"));
-        Cache_get_detail_id(&server_pool.cache, &new_detail);
-        //~ DEBUGMSG(syslog(LOG_DEBUG, "Cache_put_config\n"));
-        Cache_put_config(&server_pool.cache, cache_comp->id, new_detail.id, 0);
-        //~ DEBUGMSG(syslog(LOG_DEBUG, "free\n"));
+        else{ /* Такая деталь уже есть в базе! */
+            DEBUGMSG(syslog(LOG_DEBUG, "Такая деталь уже есть в базе! #%d", new_detail.id));
+        }
+        
+        if(cache_configs){
+            /* Ищем в текущих конфигурациях, есть ли такая деталь? */
+            LC_Config *finded_config = NULL;
+            for(int j = 0; j < configs_count; j++){
+                if(cache_configs[j].detail_id == new_detail.id){
+                    finded_config = &cache_configs[j];
+                    break;
+                }
+            }
+            if(finded_config == NULL)
+                Cache_put_config(&server_pool.cache, cache_comp->id, new_detail.id, 0);
+            else
+                DEBUGMSG(syslog(LOG_DEBUG, "Конфиг уже есть! #%d\n", finded_config->id));
+        }
+        else{
+            Cache_put_config(&server_pool.cache, cache_comp->id, new_detail.id, 0);
+        }
+        
         if(new_detail.params) free(new_detail.params);
     }
-    //~ DEBUGMSG(syslog(LOG_DEBUG, "cycle_complete!\n"));
-    /*LC_Detail *cache_details = Cache_get_details(&server_pool.cache, &cache_details_count, 0);
-    for(int i = 0; i < cache_details_count; i++){
-        for(int j = 0; j < details_count; j++){
-            if(!(
-                cache_details[i].vendor_id == details[j].vendor_id &&
-                cache_details[i].device_id == details[j].device_id &&
-                cache_details[i].subsystem_id == details[j].subsystem_id &&
-                cache_details[i].class_code == details[j].class_code &&
-                cache_details[i].revision == details[j].revision &&
-                !strncmp(cache_details[i].serial, details[j].serial, details[j].serial_length)
-            )){*/ /* Детали в кэше нет - добавляем! */
-                /*Cache_put_detail(
-                    &server_pool.cache,
-                    details[j].vendor_id,
-                    details[j].device_id,
-                    details[j].subsystem_id,
-                    details[j].serial
-                );
-            }
-        }
-    }
     
-    if(cache_details) free(cache_details);
-    if(cache_configs) free(cache_configs);*/
-    if(cache_comp) free(cache_comp);
+    if(cache_configs) free(cache_configs);
+    if(cache_comp)    free(cache_comp);
 }
 
 void *thread_synchronizer(void *attr){
     int ret;
     /* Инициализируем кэш */
-    ret = Cache_init(DEFAULT_CACHE_PATH"server_cache.db", &server_pool.cache);
+    ret = Cache_init(DEFAULT_CACHE_PATH"server_cache.sqlite3", &server_pool.cache);
     if(ret == LC_CODE_BADF_ERR)
         syslog(LOG_ERR, "Sync: произошла ошибка создания / открытия файла.");
     if(ret == LC_CODE_TABLE_ERR)

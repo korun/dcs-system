@@ -48,6 +48,12 @@
 #define get_uint16_from(POINTER) ntohs((uint16_t) *((uint16_t *) (POINTER)))
 #define get_uint8_from(POINTER)       ((uint8_t)  *((uint8_t  *) (POINTER)))
 
+#ifdef NDEBUG
+    #define DEBUGMSG(X)
+#else
+    #define DEBUGMSG(X) (X)
+#endif
+
 typedef struct {
     uint32_t id;
     uint16_t vendor_id;
