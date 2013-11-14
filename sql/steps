@@ -2,8 +2,8 @@ psql postgres                -f psql_01_init.sql
 psql device_control_database -f psql_02_pci.sql
 psql device_control_database -f psql_03_class.sql
 psql device_control_database -f psql_04_tables.sql
-psql device_control_database -f psql_05_test_data.sql
 psql device_control_database -f psql_05_trigger.sql
+psql device_control_database -f psql_06_test_data.sql
 
 psql device_control_database -c "INSERT INTO devices VALUES (0, 0, 0, ' ');"
 psql device_control_database -c "INSERT INTO subsystems VALUES (0, 0, 0, 0, ' ');"
