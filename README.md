@@ -6,10 +6,10 @@ dcs-system
 ##Установка
 ###Первичная настройка
 ```bash
-apt-get g++        # если его нет
-apt-get biosdecode # для клиента
-apt-get lspci      # для клиента
-apt-get dmidecode  # для клиента
+apt-get install g++        # если его нет
+apt-get install biosdecode # для клиента
+apt-get install lspci      # для клиента
+apt-get install dmidecode  # для клиента
 # Ставим ZeroMQ
 tar xzvpf zeromq-4.0.1.tar.gz.tar.gz && cd zeromq-4.0.1 && ./configure && make && make install
 apt-get install postgresql-9.1 # версия не ниже 9.1
